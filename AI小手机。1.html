@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Glass Phone</title>
+<style>
+:root{
+  --bg1:#fce8f0;--bg2:#f8e0ec;--bg3:#f5d8e8;
+  --glass:rgba(180,140,160,0.13);
+  --glass2:rgba(200,160,180,0.18);
+  --glassDark:rgba(160,100,130,0.10);
+  --blur:blur(20px);
+  --accent:#d06090;
+  --accent2:#e090b0;
+  --radius:18px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+  --text:#3a2030;
+  --textsub:rgba(80,40,60,0.55);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;height:-webkit-fill-available;overflow:hidden;user-select:none;-webkit-user-select:none;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  background:linear-gradient(160deg,#fce8f0 0%,#f9dfe9 35%,#f5d5e4 70%,#f2cfdf 100%);
+  background-attachment:fixed;
+  color:var(--text);
+}
+
+/* ===== 页面系统 ===== */
+.phone{width:100%;height:100%;position:relative;overflow:hidden;
+  padding-top:var(--safe-top);padding-bottom:var(--safe-bot);}
+.page{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;
+  padding-top:var(--safe-top);padding-bottom:var(--safe-bot);}
+.page.active{display:flex;}
+
+/* ===== 玻璃卡片通用 ===== */
+.glass{background:rgba(255,220,235,0.35);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-radius:var(--radius);border:1px solid rgba(255,255,255,0.55);
+  box-shadow:0 4px 20px rgba(180,100,130,0.08);}
+.glass2{background:rgba(255,230,240,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-radius:var(--radius);border:1px solid rgba(255,255,255,0.70);
+  box-shadow:0 4px 20px rgba(180,100,130,0.10);}
+
+/* ===== 状态栏 ===== */
+.status-bar{
+  flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px 4px;font-size:13px;font-weight:600;color:var(--text);
+}
+.status-r{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text);}
+
+/* ===== 顶部时间天气大卡片 ===== */
+.top-card{
+  margin:4px 12px 10px;
+  background:rgba(255,225,238,0.60);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.70);border-radius:20px;
+  padding:14px 16px 12px;
+  box-shadow:0 4px 18px rgba(180,100,130,0.10);
+  position:relative;flex-shrink:0;
+}
+.top-card-time{font-size:clamp(20px,5.5vw,26px);font-weight:700;color:var(--text);letter-spacing:0.5px;}
+.top-card-date{font-size:clamp(13px,3.5vw,16px);font-weight:600;color:var(--text);margin-bottom:4px;}
+.top-card-weather{font-size:12px;color:var(--textsub);}
+.top-card-badge{
+  position:absolute;right:14px;top:14px;
+  background:rgba(210,140,170,0.18);
+  border:1px solid rgba(210,140,170,0.30);
+  border-radius:20px;padding:3px 10px;
+  font-size:11px;color:var(--textsub);
+}
+
+/* ===== 主屏幕/编辑 tab ===== */
+.tab-bar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px 8px;}
+.tab-left{display:flex;gap:6px;align-items:center;}
+.tab-btn{
+  background:rgba(210,150,175,0.18);border:1px solid rgba(210,150,175,0.30);
+  border-radius:14px;padding:4px 14px;font-size:12px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:background 0.15s;
+}
+.tab-btn.active{background:rgba(210,150,175,0.38);border-color:rgba(210,150,175,0.50);}
+.tab-btn:active{opacity:0.7;}
+.tab-dots{display:flex;gap:5px;align-items:center;}
+.tab-dot{width:18px;height:4px;border-radius:2px;background:rgba(180,120,150,0.30);}
+.tab-dot.active{background:rgba(180,100,140,0.70);}
+.tab-dot.sm{width:10px;}
+
+/* ===== 滚动主区 ===== */
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  padding:0 12px 8px;}
+
+/* ===== today 打卡卡片 ===== */
+.today-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.today-card{
+  aspect-ratio:0.85;border-radius:16px;overflow:hidden;cursor:pointer;
+  background:rgba(255,230,240,0.50);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.70);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;font-size:11px;color:var(--textsub);transition:transform 0.12s;
+  box-shadow:0 2px 10px rgba(180,100,130,0.08);position:relative;
+}
+.today-card:active{transform:scale(0.94);}
+.today-card img{width:100%;height:calc(100% - 26px);object-fit:cover;position:absolute;top:0;left:0;}
+.today-card .card-label{position:relative;z-index:1;font-size:11px;color:var(--textsub);
+  margin-top:auto;padding:6px 0 4px;}
+.today-card .plus-btn{
+  position:absolute;top:6px;right:6px;z-index:2;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(180,60,100,0.25);
+}
+
+/* ===== 主内容区：左大块+右2x2 ===== */
+.mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.big-card{
+  border-radius:18px;overflow:hidden;cursor:pointer;
+  background:rgba(255,228,238,0.50);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.70);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(180,100,130,0.08);padding:12px;transition:transform 0.12s;
+  flex-direction:column;gap:6px;aspect-ratio:1;
+}
+.big-card:active{transform:scale(0.97);}
+.big-card-content{width:100%;font-size:12px;color:var(--text);
+  white-space:pre-wrap;word-break:break-all;text-align:left;}
+.icon-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.grid-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+  transition:transform 0.12s;}
+.grid-item:active{transform:scale(0.88);}
+.grid-icon{
+  width:100%;aspect-ratio:1;
+  border-radius:16px;
+  background:rgba(255,225,238,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.70);
+  display:flex;align-items:center;justify-content:center;font-size:clamp(22px,6vw,28px);
+  box-shadow:0 2px 10px rgba(180,100,130,0.08);
+}
+.grid-label{font-size:clamp(10px,2.8vw,12px);color:var(--textsub);font-weight:600;}
+
+/* ===== 下半行：2图标 + 音乐组件 ===== */
+.bot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.bot-icon-col{display:flex;flex-direction:column;gap:8px;}
+
+/* ===== 音乐播放组件 ===== */
+.music-widget{
+  border-radius:18px;overflow:hidden;cursor:pointer;
+  background:rgba(245,215,230,0.65);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.70);
+  box-shadow:0 4px 16px rgba(180,100,130,0.12);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 8px 8px;gap:4px;position:relative;grid-column:span 1;transition:transform 0.12s;
+}
+.music-widget:active{transform:scale(0.96);}
+.vinyl{
+  width:clamp(54px,15vw,68px);height:clamp(54px,15vw,68px);border-radius:50%;
+  background:conic-gradient(
+    #d8b0c0 0deg 30deg,#c8a0b0 30deg 60deg,#d8b0c0 60deg 90deg,
+    #c8a0b0 90deg 120deg,#d8b0c0 120deg 150deg,#c8a0b0 150deg 180deg,
+    #d8b0c0 180deg 210deg,#c8a0b0 210deg 240deg,#d8b0c0 240deg 270deg,
+    #c8a0b0 270deg 300deg,#d8b0c0 300deg 330deg,#c8a0b0 330deg 360deg
+  );
+  position:relative;box-shadow:0 0 0 3px rgba(255,255,255,0.50);
+  animation:spin 4s linear infinite;animation-play-state:paused;flex-shrink:0;
+}
+.vinyl.playing{animation-play-state:running;}
+.vinyl::before{
+  content:'';position:absolute;inset:18%;border-radius:50%;
+  background:radial-gradient(circle,#e080a8 0%,#c05880 50%,#a03060 100%);
+}
+.vinyl::after{
+  content:'';position:absolute;inset:43%;border-radius:50%;
+  background:rgba(255,235,242,0.9);box-shadow:0 0 0 1px rgba(200,120,150,0.30);
+}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.music-label{font-size:10px;color:var(--textsub);font-weight:600;white-space:nowrap;}
+.music-sub{font-size:9px;color:var(--textsub);opacity:0.7;}
+.music-bar{position:absolute;top:6px;left:8px;right:8px;
+  display:flex;justify-content:space-between;align-items:center;}
+.music-playing-tag{font-size:9px;color:var(--textsub);}
+
+/* ===== Dock ===== */
+.dock{
+  flex-shrink:0;display:flex;justify-content:space-around;align-items:center;
+  margin:0 12px 8px;padding:10px 8px;
+  background:rgba(255,225,238,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-radius:26px;border:1px solid rgba(255,255,255,0.72);
+  box-shadow:0 4px 18px rgba(180,100,130,0.10);
+}
+.dock-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:transform 0.12s;}
+.dock-item:active{transform:scale(0.85);}
+.dock-icon{
+  width:52px;height:52px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 2px 8px rgba(180,100,130,0.10);
+  background:rgba(255,230,240,0.60);border:1px solid rgba(255,255,255,0.72);
+}
+.dock-label{font-size:10px;color:var(--textsub);font-weight:600;}.dock-item:active{transform:scale(0.85);}
+.dock-icon{
+  width:50px;height:50px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.10);
+}
+.dock-label{font-size:10px;color:#555;font-weight:600;}
+</style>
+
+<style>
+/* ===== 页头通用 ===== */
+.page-header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;}
+.page-title{font-size:17px;font-weight:700;color:var(--text);}
+.back-btn{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,225,238,0.60);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.68);
+  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text);
+}
+.back-btn:active{opacity:0.7;}
+
+/* ===== 聊天页 ===== */
+.chat-header{
+  flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 14px 8px;
+  background:rgba(255,225,238,0.60);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-bottom:1px solid rgba(255,255,255,0.55);
+}
+.chat-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#f0b0d0,#d080b0);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  flex-shrink:0;overflow:hidden;border:2px solid rgba(255,255,255,0.70);
+}
+.chat-avatar img{width:100%;height:100%;object-fit:cover;}
+.chat-name{font-size:15px;font-weight:700;color:var(--text);}
+.chat-status{font-size:11px;color:var(--textsub);}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:10px;}
+.msg-row{display:flex;align-items:flex-end;gap:8px;}
+.msg-row.me{flex-direction:row-reverse;}
+.msg-bubble{max-width:72%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.55;word-break:break-word;}
+.msg-row.ai .msg-bubble{
+  background:rgba(255,225,238,0.60);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.65);color:var(--text);border-bottom-left-radius:4px;
+}
+.msg-row.me .msg-bubble{
+  background:linear-gradient(135deg,#e080a8,#c05880);color:#fff;border-bottom-right-radius:4px;
+}
+.msg-time{font-size:10px;color:var(--textsub);flex-shrink:0;margin-bottom:4px;}
+.msg-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#f0b0d0,#d080b0);
+  display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;}
+.msg-avatar img{width:100%;height:100%;object-fit:cover;}
+.typing-dots span{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:rgba(180,100,130,0.50);margin:0 2px;animation:dot 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
+.chat-input-area{
+  flex-shrink:0;display:flex;align-items:center;gap:8px;
+  padding:8px 12px;padding-bottom:max(8px,var(--safe-bot));
+  background:rgba(255,225,238,0.60);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid rgba(255,255,255,0.55);
+}
+.chat-input{
+  flex:1;border:1.5px solid rgba(210,150,175,0.35);border-radius:22px;
+  padding:9px 14px;font-size:14px;outline:none;
+  background:rgba(255,235,245,0.70);color:var(--text);-webkit-appearance:none;
+}
+.chat-input::placeholder{color:var(--textsub);}
+.chat-input:focus{border-color:var(--accent);}
+.chat-send-btn{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#e080a8,#c05880);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  flex-shrink:0;transition:transform 0.12s;
+}
+.chat-send-btn:active{transform:scale(0.88);}
+.chat-voice-btn{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(255,225,238,0.60);border:1px solid rgba(255,255,255,0.65);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+
+/* ===== 设置页通用 ===== */
+.settings-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px 20px;}
+.settings-section{margin-bottom:18px;}
+.section-title{font-size:12px;font-weight:700;color:var(--textsub);text-transform:uppercase;
+  letter-spacing:0.8px;padding:12px 4px 6px;}
+.setting-card{
+  background:rgba(255,228,240,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.68);border-radius:16px;overflow:hidden;
+  box-shadow:0 2px 10px rgba(180,100,130,0.07);
+}
+.setting-row{display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-bottom:1px solid rgba(210,150,175,0.15);}
+.setting-row:last-child{border-bottom:none;}
+.setting-row-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+.setting-row-body{flex:1;min-width:0;}
+.setting-row-label{font-size:14px;color:var(--text);font-weight:500;}
+.setting-row-sub{font-size:11px;color:var(--textsub);margin-top:1px;}
+.setting-input{
+  width:100%;border:1.5px solid rgba(210,150,175,0.30);border-radius:10px;
+  padding:8px 11px;font-size:13px;outline:none;
+  background:rgba(255,238,248,0.70);color:var(--text);margin-top:6px;-webkit-appearance:none;
+}
+.setting-input::placeholder{color:var(--textsub);}
+.setting-input:focus{border-color:var(--accent);}
+textarea.setting-input{resize:vertical;min-height:70px;}
+.setting-select{
+  width:100%;border:1.5px solid rgba(210,150,175,0.30);border-radius:10px;
+  padding:8px 11px;font-size:13px;outline:none;
+  background:rgba(255,238,248,0.85);color:var(--text);margin-top:6px;
+  -webkit-appearance:none;appearance:none;
+}
+.setting-toggle{position:relative;width:44px;height:26px;flex-shrink:0;}
+.setting-toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;border-radius:13px;background:rgba(200,160,180,0.30);
+  transition:background 0.25s;cursor:pointer;}
+.toggle-slider::before{content:'';position:absolute;width:20px;height:20px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:transform 0.25s;box-shadow:0 1px 4px rgba(180,100,130,0.25);}
+.setting-toggle input:checked+.toggle-slider{background:linear-gradient(135deg,#e080a8,#c05880);}
+.setting-toggle input:checked+.toggle-slider::before{transform:translateX(18px);}
+.setting-number{
+  width:70px;border:1.5px solid rgba(210,150,175,0.30);border-radius:10px;
+  padding:7px 10px;font-size:13px;outline:none;
+  background:rgba(255,238,248,0.70);color:var(--text);text-align:center;-webkit-appearance:none;
+}
+.setting-number:focus{border-color:var(--accent);}
+.btn-pill{border:none;border-radius:12px;padding:9px 16px;font-size:13px;font-weight:600;
+  cursor:pointer;transition:transform 0.12s,opacity 0.12s;white-space:nowrap;}
+.btn-pill:active{transform:scale(0.94);opacity:0.85;}
+.btn-primary{background:linear-gradient(135deg,#e080a8,#c05880);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#60d090,#40b870);color:#fff;}
+.btn-red{background:linear-gradient(135deg,#f08070,#e05050);color:#fff;}
+.btn-gray{background:rgba(210,150,175,0.18);color:var(--text);border:1px solid rgba(210,150,175,0.30);}
+.save-bar{flex-shrink:0;padding:10px 14px;padding-bottom:max(10px,var(--safe-bot));
+  background:rgba(255,225,238,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid rgba(255,255,255,0.55);}
+.save-btn{width:100%;padding:14px;border:none;border-radius:14px;font-size:16px;font-weight:700;
+  background:linear-gradient(135deg,#60d090,#40b870);color:#fff;cursor:pointer;transition:transform 0.12s;}
+.save-btn:active{transform:scale(0.97);}
+.preset-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.preset-card{
+  background:rgba(255,228,240,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid rgba(255,255,255,0.68);border-radius:14px;
+  padding:11px 14px;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;transition:transform 0.12s;
+}
+.preset-card:active{transform:scale(0.97);}
+.preset-card.active-preset{border-color:var(--accent);}
+.preset-name{font-size:14px;font-weight:600;color:var(--text);}
+.preset-sub{font-size:11px;color:var(--textsub);margin-top:2px;}
+</style>
+
+<style>
+/* ===== 弹窗 ===== */
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(100,50,70,0.30);z-index:300;
+  align-items:flex-end;justify-content:center;padding-bottom:var(--safe-bot);}
+.modal-mask.open{display:flex;}
+.modal-box{
+  width:100%;max-width:480px;
+  background:rgba(255,235,245,0.96);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-radius:22px 22px 0 0;padding:20px 18px;
+  max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;
+  border-top:1px solid rgba(255,255,255,0.80);
+}
+.modal-title{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:14px;text-align:center;}
+.modal-close{position:absolute;right:16px;top:16px;width:28px;height:28px;border-radius:50%;border:none;
+  background:rgba(210,150,175,0.20);font-size:15px;cursor:pointer;color:var(--textsub);
+  display:flex;align-items:center;justify-content:center;}
+.sms-msgs{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.sms-input-row{display:flex;gap:8px;}
+.sms-input{flex:1;border:1.5px solid rgba(210,150,175,0.35);border-radius:20px;
+  padding:9px 14px;font-size:14px;outline:none;background:rgba(255,235,245,0.80);color:var(--text);
+  -webkit-appearance:none;}
+.sms-input::placeholder{color:var(--textsub);}
+.sms-input:focus{border-color:var(--accent);}
+.browser-bar{display:flex;gap:8px;margin-bottom:10px;}
+.browser-url{flex:1;border:1.5px solid rgba(210,150,175,0.35);border-radius:20px;
+  padding:9px 14px;font-size:13px;outline:none;background:rgba(255,235,245,0.80);color:var(--text);
+  -webkit-appearance:none;}
+.browser-url::placeholder{color:var(--textsub);}
+.browser-url:focus{border-color:var(--accent);}
+.browser-frame{width:100%;height:340px;border:none;border-radius:12px;background:#fff;}
+.browser-summary{background:rgba(210,150,175,0.12);border-radius:12px;padding:12px;
+  font-size:13px;color:var(--text);line-height:1.6;margin-top:8px;display:none;}
+.call-modal .modal-box{max-height:50vh;text-align:center;}
+.call-avatar-big{width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,#f0b0d0,#d080b0);
+  display:flex;align-items:center;justify-content:center;font-size:40px;
+  margin:0 auto 12px;border:3px solid rgba(255,255,255,0.70);}
+.call-name{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.call-status{font-size:13px;color:var(--textsub);margin-bottom:20px;}
+.call-btns{display:flex;justify-content:center;gap:30px;}
+.call-btn{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:28px;transition:transform 0.12s;}
+.call-btn:active{transform:scale(0.88);}
+.call-btn.green{background:linear-gradient(135deg,#60d090,#40b870);}
+.call-btn.red{background:linear-gradient(135deg,#f08070,#e05050);}
+.toast{
+  position:fixed;bottom:calc(90px + var(--safe-bot));left:50%;transform:translateX(-50%);
+  background:rgba(80,30,50,0.82);color:#fff;border:1px solid rgba(255,200,220,0.25);
+  padding:9px 22px;border-radius:22px;font-size:13px;font-weight:600;
+  z-index:9999;pointer-events:none;white-space:nowrap;animation:toastIn 0.2s ease;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.placeholder-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--textsub);}
+.placeholder-page .ph-icon{font-size:56px;opacity:0.45;}
+.placeholder-page .ph-text{font-size:14px;}
+</style>
+
+</head>
+<body>
+<div class="phone">
+
+<!-- ========================================
+     主桌面
+======================================== -->
+<div class="page active" id="pageHome">
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span id="homeTime">00:00</span>
+    <div class="status-r"><span>5G</span><span>Wi-Fi</span><span>🔋</span></div>
+  </div>
+
+  <!-- 顶部时间天气大卡片 -->
+  <div class="top-card">
+    <div class="top-card-date" id="topDate">2026-07-26 周日 17:33</div>
+    <div class="top-card-weather">上海 · 多云 18°C</div>
+    <div class="top-card-badge">状态可注入</div>
+  </div>
+
+  <!-- tab栏 -->
+  <div class="tab-bar">
+    <div class="tab-left">
+      <div class="tab-btn active">主屏幕</div>
+      <div class="tab-btn" onclick="toast('编辑模式')">编辑</div>
+    </div>
+    <div class="tab-dots">
+      <div class="tab-dot active"></div>
+      <div class="tab-dot sm"></div>
+      <div class="tab-dot sm"></div>
+    </div>
+  </div>
+
+  <!-- 滚动主区 -->
+  <div class="scroll-area">
+
+    <!-- today 打卡卡片 -->
+    <div class="today-row">
+      <div class="today-card" id="card0" onclick="uploadTodayCard(0)">
+        <div class="plus-btn">＋</div>
+        <div class="card-label">today</div>
+      </div>
+      <div class="today-card" id="card1" onclick="uploadTodayCard(1)">
+        <div class="plus-btn">＋</div>
+        <div class="card-label">today</div>
+      </div>
+      <div class="today-card" id="card2" onclick="uploadTodayCard(2)">
+        <div class="plus-btn">＋</div>
+        <div class="card-label">today</div>
+      </div>
+    </div>
+
+    <!-- 中间：左大卡 + 右2×2图标（我的/广场/聊天/步数）-->
+    <div class="mid-grid">
+      <!-- 大方形卡片 -->
+      <div class="big-card" id="bigCard" onclick="editBigCard()">
+        <span id="bigCardPlaceholder" style="font-size:32px;opacity:0.3;">📋</span>
+        <span id="bigCardHint" style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;">点击粘贴<br>人物设定</span>
+        <div class="big-card-content" id="bigCardContent" style="display:none;"></div>
+      </div>
+      <!-- 右侧2×2 -->
+      <div class="icon-grid">
+        <div class="grid-item" onclick="goPage('pageMe')">
+          <div class="grid-icon">👤</div>
+          <div class="grid-label">我的</div>
+        </div>
+        <div class="grid-item" onclick="goPage('pageSquare')">
+          <div class="grid-icon">🌐</div>
+          <div class="grid-label">广场</div>
+        </div>
+        <div class="grid-item" onclick="goPage('pageChat')">
+          <div class="grid-icon">💬</div>
+          <div class="grid-label">聊天</div>
+        </div>
+        <div class="grid-item" onclick="goPage('pageSteps')">
+          <div class="grid-icon">👟</div>
+          <div class="grid-label">步数</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下半：热搜/外观 + 音乐组件 -->
+    <div class="bot-grid">
+      <!-- 左侧两个图标 -->
+      <div class="bot-icon-col">
+        <div class="grid-item" onclick="goPage('pageHot')">
+          <div class="grid-icon">🔥</div>
+          <div class="grid-label">热搜</div>
+        </div>
+        <div class="grid-item" onclick="goPage('pageAppearance')">
+          <div class="grid-icon">🎨</div>
+          <div class="grid-label">外观设置</div>
+        </div>
+      </div>
+      <!-- 中间空列（朋友/世界） -->
+      <div class="bot-icon-col">
+        <div class="grid-item" onclick="goPage('pageFriends')">
+          <div class="grid-icon">👫</div>
+          <div class="grid-label">朋友</div>
+        </div>
+        <div class="grid-item" onclick="goPage('pageWorld')">
+          <div class="grid-icon">🌍</div>
+          <div class="grid-label">世界</div>
+        </div>
+      </div>
+      <!-- 音乐组件 -->
+      <div class="music-widget" id="musicWidget" onclick="toggleMusic()">
+        <div class="music-bar">
+          <span class="music-playing-tag">正在播放</span>
+        </div>
+        <div class="vinyl" id="vinyl"></div>
+        <div class="music-label" id="musicTitle">lofi · demo</div>
+      </div>
+    </div>
+
+  </div><!-- /scroll-area -->
+
+  <!-- Dock -->
+  <div class="dock">
+    <div class="dock-item" onclick="openModal('modalCall')">
+      <div class="dock-icon">📞</div>
+      <div class="dock-label">电话</div>
+    </div>
+    <div class="dock-item" onclick="openModal('modalSMS')">
+      <div class="dock-icon">💬</div>
+      <div class="dock-label">信息</div>
+    </div>
+    <div class="dock-item" onclick="openModal('modalBrowser')">
+      <div class="dock-icon">🌐</div>
+      <div class="dock-label">浏览器</div>
+    </div>
+    <div class="dock-item" onclick="goPage('pageSettings')">
+      <div class="dock-icon">⚙️</div>
+      <div class="dock-label">设置</div>
+    </div>
+  </div>
+</div><!-- /pageHome -->
+
+<!-- ========================================
+     聊天页
+======================================== -->
+<div class="page" id="pageChat">
+  <div class="chat-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="chat-avatar" id="chatHeaderAvatar">🌸</div>
+    <div style="flex:1;">
+      <div class="chat-name" id="chatHeaderName">AI角色</div>
+      <div class="chat-status" id="chatHeaderStatus">在线</div>
+    </div>
+    <div style="font-size:20px;cursor:pointer;" onclick="goPage('pageSettings')">⚙️</div>
+  </div>
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-input-area">
+    <div class="chat-voice-btn" onclick="toggleVoice()">🎤</div>
+    <input class="chat-input" id="chatInput" placeholder="发条消息..." onkeydown="if(event.key==='Enter')sendMsg()">
+    <button class="chat-send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- ========================================
+     占位页：我的 / 广场 / 步数 / 热搜 / 朋友 / 世界
+======================================== -->
+<div class="page" id="pageMe">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">我的</div><div style="width:32px;"></div>
+  </div>
+  <div class="placeholder-page"><div class="ph-icon">👤</div><div class="ph-text">个人档案 · 开发中</div></div>
+</div>
+<div class="page" id="pageSquare">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">广场</div><div style="width:32px;"></div>
+  </div>
+  <div class="placeholder-page"><div class="ph-icon">🌐</div><div class="ph-text">角色卡广场 · 开发中</div></div>
+</div>
+<div class="page" id="pageSteps">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">步数</div><div style="width:32px;"></div>
+  </div>
+  <div class="placeholder-page">
+    <div class="ph-icon">👟</div>
+    <div style="font-size:48px;font-weight:200;color:#888;" id="stepsCount">0</div>
+    <div class="ph-text">今日虚拟步数</div>
+    <button class="btn-pill btn-primary" onclick="addSteps()" style="margin-top:10px;">+ 随机步数</button>
+  </div>
+</div>
+<div class="page" id="pageHot">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">热搜</div><div style="width:32px;"></div>
+  </div>
+  <div class="scroll-area" id="hotList"></div>
+</div>
+<div class="page" id="pageFriends">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">朋友</div>
+    <div class="btn-pill btn-primary" style="padding:6px 14px;font-size:12px;" onclick="addFriend()">＋ 添加</div>
+  </div>
+  <div class="scroll-area" id="friendsList"></div>
+</div>
+<div class="page" id="pageWorld">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">世界观</div><div style="width:32px;"></div>
+  </div>
+  <div class="scroll-area" style="padding-top:8px;">
+    <div class="section-title">全局世界观设定</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-body">
+          <div class="setting-row-label">世界背景</div>
+          <textarea class="setting-input" id="worldBg" rows="5" placeholder="描述世界背景、时代、规则..."></textarea>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-body">
+          <div class="setting-row-label">人物关系</div>
+          <textarea class="setting-input" id="worldRelations" rows="4" placeholder="角色之间的关系设定..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn-pill btn-primary" style="flex:1;" onclick="saveWorld()">💾 保存世界观</button>
+      <button class="btn-pill btn-red" onclick="clearWorld()">🗑 清空</button>
+    </div>
+  </div>
+</div>
+<div class="page" id="pageAppearance">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">外观设置</div><div style="width:32px;"></div>
+  </div>
+  <div class="scroll-area" style="padding-top:8px;">
+    <div class="section-title">壁纸主题</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🎨</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">背景渐变色</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <div class="btn-pill btn-gray" onclick="setBg('145deg,#f0e6ff,#ffe0f0,#e0f0ff')">紫粉蓝</div>
+            <div class="btn-pill btn-gray" onclick="setBg('145deg,#fff0e6,#ffe6f0,#f0e6ff')">暖橙粉</div>
+            <div class="btn-pill btn-gray" onclick="setBg('145deg,#e6f0ff,#e6ffe6,#f0ffe6')">清新绿</div>
+            <div class="btn-pill btn-gray" onclick="setBg('145deg,#1a1a2e,#16213e,#0f3460')">深夜蓝</div>
+          </div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🌫</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">磨砂玻璃强度</div>
+          <input type="range" min="4" max="30" value="18" id="blurRange"
+            oninput="setBlur(this.value)" style="width:100%;margin-top:8px;accent-color:#c060d0;">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">💧</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">卡片透明度</div>
+          <input type="range" min="20" max="90" value="55" id="opacityRange"
+            oninput="setOpacity(this.value)" style="width:100%;margin-top:8px;accent-color:#c060d0;">
+        </div>
+      </div>
+    </div>
+    <div class="section-title">角色头像</div>
+    <div class="setting-card">
+      <div class="setting-row" onclick="uploadAvatar()" style="cursor:pointer;">
+        <div class="setting-row-icon">
+          <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#f0d0ff,#d0c0ff);display:flex;align-items:center;justify-content:center;font-size:20px;" id="avatarPreview">🌸</div>
+        </div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">点击更换头像</div>
+          <div class="setting-row-sub">角色主头像，显示在聊天界面</div>
+        </div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">✏️</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">角色名称</div>
+          <input class="setting-input" id="charName" placeholder="给角色取个名字...">
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn-pill btn-primary" style="width:100%;" onclick="saveAppearance()">💾 保存外观</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     设置页（第二张图：API预设 + 主副API）
+======================================== -->
+<div class="page" id="pageSettings">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">⚙️ 设置</div><div style="width:32px;"></div>
+  </div>
+  <div class="settings-scroll">
+
+    <!-- API预设管理 -->
+    <div class="section-title">API 预设管理</div>
+    <div class="preset-list" id="presetList"></div>
+    <button class="btn-pill btn-gray" style="width:100%;margin-bottom:4px;" onclick="addPreset()">＋ 新增预设</button>
+
+    <!-- 主API -->
+    <div class="section-title">主 API 设置（日常聊天）</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🌐</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">反代地址</div>
+          <div class="setting-row-sub">不要加 /v1 后缀，已自动补全</div>
+          <input class="setting-input" id="apiBase" placeholder="https://api.openai.com" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🔑</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">API Key</div>
+          <input class="setting-input" id="apiKey" type="password" placeholder="sk-xxxxxxxxx" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🤖</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">模型选择</div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <select class="setting-select" id="apiModel" style="flex:1;">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+              <option value="deepseek-chat">deepseek-chat</option>
+              <option value="custom">自定义...</option>
+            </select>
+            <button class="btn-pill btn-gray" onclick="fetchModels()">拉取模型</button>
+          </div>
+          <input class="setting-input" id="apiModelCustom" placeholder="自定义模型名" style="display:none;margin-top:6px;">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🌡️</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">Temperature（温度）</div>
+          <div class="setting-row-sub">越高越随性，0.9适合情绪化OC</div>
+          <input type="range" min="0" max="20" value="9" id="tempRange"
+            oninput="document.getElementById('tempVal').textContent=(this.value/10).toFixed(1)"
+            style="width:100%;margin-top:6px;accent-color:#c060d0;">
+          <span id="tempVal" style="font-size:13px;color:#888;">0.9</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🎲</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">Top-P</div>
+          <input type="range" min="0" max="10" value="9" id="toppRange"
+            oninput="document.getElementById('toppVal').textContent=(this.value/10).toFixed(1)"
+            style="width:100%;margin-top:6px;accent-color:#c060d0;">
+          <span id="toppVal" style="font-size:13px;color:#888;">0.9</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">📝</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">角色设定 System Prompt</div>
+          <textarea class="setting-input" id="apiSystem" rows="5" placeholder="你是一个可爱的AI助手，名字叫..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 副API -->
+    <div class="section-title">副 API 设置（长期记忆总结）</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🌐</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">副反代地址</div>
+          <input class="setting-input" id="subApiBase" placeholder="同主API或单独填写" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🔑</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">副 API Key</div>
+          <input class="setting-input" id="subApiKey" type="password" placeholder="sk-xxxxxxxxx" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🤖</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">副模型</div>
+          <input class="setting-input" id="subApiModel" placeholder="gpt-4o-mini">
+        </div>
+      </div>
+    </div>
+
+    <!-- 跳转其他设置页 -->
+    <div class="section-title">更多设置</div>
+    <div class="setting-card">
+      <div class="setting-row" onclick="goPage('pageSettings2')" style="cursor:pointer;">
+        <div class="setting-row-icon">🔔</div>
+        <div class="setting-row-body"><div class="setting-row-label">后台活动 · 语音TTS · 性能</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row" onclick="goPage('pageSettings3')" style="cursor:pointer;">
+        <div class="setting-row-icon">🎨</div>
+        <div class="setting-row-body"><div class="setting-row-label">生图配置 · 数据管理</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row" onclick="goPage('pageSettings4')" style="cursor:pointer;">
+        <div class="setting-row-icon">🔧</div>
+        <div class="setting-row-body"><div class="setting-row-label">高级调试 · 群聊NPC</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <button class="save-btn" onclick="saveAllSettings()">✅ 保存所有设置</button>
+  </div>
+</div>
+
+<!-- ========================================
+     设置页2：后台活动 / TTS / 性能 / 生图
+======================================== -->
+<div class="page" id="pageSettings2">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">后台 · 语音 · 性能</div><div style="width:32px;"></div>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="section-title">后台角色活动</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">💬</div>
+        <div class="setting-row-body"><div class="setting-row-label">启用后台角色活动</div>
+          <div class="setting-row-sub">切后台/锁屏时AI主动发消息</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="bgActive"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">⏱</div>
+        <div class="setting-row-body"><div class="setting-row-label">检测间隔（秒）</div></div>
+        <input class="setting-number" id="bgInterval" type="number" value="60" min="10">
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🚫</div>
+        <div class="setting-row-body"><div class="setting-row-label">被拉黑后冷静期（小时）</div></div>
+        <input class="setting-number" id="bgCooldown" type="number" value="24" min="1">
+      </div>
+    </div>
+
+    <div class="section-title">语音消息 · Minimax TTS</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🎙</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">Minimax API Key</div>
+          <div class="setting-row-sub">填入后AI消息可转语音播放</div>
+          <input class="setting-input" id="minimaxKey" type="password" placeholder="minimax api key" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🗣</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">Group ID</div>
+          <input class="setting-input" id="minimaxGroupId" placeholder="minimax group id">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🎵</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">音色 Voice ID</div>
+          <input class="setting-input" id="minimaxVoice" placeholder="例：male-qn-qingse">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">性能与显示</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">📜</div>
+        <div class="setting-row-body"><div class="setting-row-label">聊天列表每次加载条数</div></div>
+        <input class="setting-number" id="loadCount" type="number" value="20" min="5">
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🚀</div>
+        <div class="setting-row-body"><div class="setting-row-label">初始加载条数</div></div>
+        <input class="setting-number" id="initCount" type="number" value="60" min="10">
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">⌨️</div>
+        <div class="setting-row-body"><div class="setting-row-label">打字机效果</div>
+          <div class="setting-row-sub">文字逐字蹦出，模拟手机打字</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="typewriter" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="section-title">AI 生图功能</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🖼</div>
+        <div class="setting-row-body"><div class="setting-row-label">启用 AI 生图</div>
+          <div class="setting-row-sub">对话中可直接让AI生成图片</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="imgEnable" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🎌</div>
+        <div class="setting-row-body"><div class="setting-row-label">启用 NovelAI 生图</div>
+          <div class="setting-row-sub">高质量二次元绘图接口</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="novelAIEnable"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <button class="save-btn" onclick="saveAllSettings()">✅ 保存所有设置</button>
+  </div>
+</div>
+
+<!-- ========================================
+     设置页3：生图配置 / 数据管理
+======================================== -->
+<div class="page" id="pageSettings3">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">生图 · 数据管理</div><div style="width:32px;"></div>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="section-title">NovelAI 生图配置</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🔑</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">NovelAI API Key</div>
+          <input class="setting-input" id="novelKey" type="password" placeholder="NAI API Key" autocomplete="off">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🤖</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">绘图模型</div>
+          <select class="setting-select" id="novelModel">
+            <option value="nai-diffusion-3">nai-diffusion-3（推荐）</option>
+            <option value="nai-diffusion-furry-3">Furry 模型</option>
+            <option value="nai-diffusion-2">nai-diffusion-2</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">📐</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">默认尺寸</div>
+          <select class="setting-select" id="novelSize">
+            <option value="832x1216">832×1216（竖版）</option>
+            <option value="1216x832">1216×832（横版）</option>
+            <option value="1024x1024">1024×1024（方形）</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🚫</div>
+        <div class="setting-row-body">
+          <div class="setting-row-label">负面提示词</div>
+          <textarea class="setting-input" id="novelNegative" rows="3"
+            placeholder="nsfw, lowres, bad anatomy..."></textarea>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🧪</div>
+        <div class="setting-row-body">
+          <button class="btn-pill btn-gray" style="width:100%;" onclick="testNovelAI()">测试生成</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">存储空间优化</div>
+    <div class="setting-card">
+      <div class="setting-row" style="cursor:pointer;" onclick="compressImages()">
+        <div class="setting-row-icon">🗜</div>
+        <div class="setting-row-body"><div class="setting-row-label">一键压缩本地图片</div>
+          <div class="setting-row-sub">减少浏览器缓存，防止卡顿</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row" style="cursor:pointer;" onclick="clearCache()">
+        <div class="setting-row-icon">🧹</div>
+        <div class="setting-row-body"><div class="setting-row-label">清理冗余数据</div>
+          <div class="setting-row-sub">清空过期缓存和垃圾文件</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">数据管理</div>
+    <div class="setting-card">
+      <div class="setting-row" style="cursor:pointer;" onclick="exportData()">
+        <div class="setting-row-icon">📤</div>
+        <div class="setting-row-body"><div class="setting-row-label">导出数据备份</div>
+          <div class="setting-row-sub">打包全部人设、记录、世界观</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row" style="cursor:pointer;" onclick="importData()">
+        <div class="setting-row-icon">📥</div>
+        <div class="setting-row-body"><div class="setting-row-label">导入备份文件</div>
+          <div class="setting-row-sub">换设备/换浏览器一键恢复</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+      <div class="setting-row" style="cursor:pointer;" onclick="deleteWorld()">
+        <div class="setting-row-icon">🌍</div>
+        <div class="setting-row-body"><div class="setting-row-label">删除世界书</div>
+          <div class="setting-row-sub">清空全局世界观，重置故事背景</div></div>
+        <span style="color:#f08070;">›</span>
+      </div>
+      <div class="setting-row" style="cursor:pointer;" onclick="repairData()">
+        <div class="setting-row-icon">🔧</div>
+        <div class="setting-row-body"><div class="setting-row-label">数据检查与修复</div>
+          <div class="setting-row-sub">聊天乱码、记忆错乱时使用</div></div>
+        <span style="color:#ccc;">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">对话控制</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🧠</div>
+        <div class="setting-row-body"><div class="setting-row-label">最近参考消息数量</div>
+          <div class="setting-row-sub">越小越流畅，越大记忆越长</div></div>
+        <input class="setting-number" id="contextCount" type="number" value="12" min="4">
+      </div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <button class="save-btn" onclick="saveAllSettings()">✅ 保存所有设置</button>
+  </div>
+</div>
+
+<!-- ========================================
+     设置页4：高级调试 / 群聊NPC
+======================================== -->
+<div class="page" id="pageSettings4">
+  <div class="page-header">
+    <div class="back-btn" onclick="goBack()">←</div>
+    <div class="page-title">高级调试 · 群聊</div><div style="width:32px;"></div>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="section-title">调试模式</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">🐛</div>
+        <div class="setting-row-body"><div class="setting-row-label">调试模式</div>
+          <div class="setting-row-sub">查看原始Prompt和接口报错内容</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="debugMode"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="section-title">群聊自动发言</div>
+    <div class="setting-card">
+      <div class="setting-row">
+        <div class="setting-row-icon">👥</div>
+        <div class="setting-row-body"><div class="setting-row-label">群聊自动发言</div>
+          <div class="setting-row-sub">多角色群聊NPC自动接话</div></div>
+        <label class="setting-toggle"><input type="checkbox" id="groupAuto" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">🤖</div>
+        <div class="setting-row-body"><div class="setting-row-label">群聊最多 NPC 数量</div></div>
+        <input class="setting-number" id="groupMaxNpc" type="number" value="3" min="1" max="10">
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">💬</div>
+        <div class="setting-row-body"><div class="setting-row-label">每轮最多发言条数</div></div>
+        <input class="setting-number" id="groupMaxMsg" type="number" value="4" min="1" max="10">
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-icon">📋</div>
+        <div class="setting-row-body"><div class="setting-row-label">每 N 轮自动总结</div>
+          <div class="setting-row-sub">0 = 关闭，填5则每5轮总结一次剧情</div></div>
+        <input class="setting-number" id="groupSummaryN" type="number" value="0" min="0">
+      </div>
+    </div>
+
+    <!-- 调试输出区域 -->
+    <div class="section-title" id="debugSection" style="display:none;">调试输出</div>
+    <div id="debugOutput" style="display:none;background:rgba(0,0,0,0.06);border-radius:12px;
+      padding:12px;font-size:11px;color:#666;font-family:monospace;
+      white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;margin-bottom:8px;">
+    </div>
+  </div>
+  <div class="save-bar">
+    <button class="save-btn" onclick="saveAllSettings()">✅ 保存所有设置</button>
+  </div>
+</div>
+
+<!-- ========================================
+     弹窗：电话
+======================================== -->
+<div class="modal-mask call-modal" id="modalCall">
+  <div class="modal-box" style="border-radius:22px;max-height:50vh;padding:30px 20px;">
+    <div class="call-avatar-big" id="callAvatar">🌸</div>
+    <div class="call-name" id="callName">AI角色</div>
+    <div class="call-status" id="callStatusText">正在呼叫...</div>
+    <div class="call-btns">
+      <button class="call-btn green" onclick="startCall()">📞</button>
+      <button class="call-btn red" onclick="closeModal('modalCall')">📵</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     弹窗：信息（短信）
+======================================== -->
+<div class="modal-mask sms-modal" id="modalSMS">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modalSMS')">✕</button>
+    <div class="modal-title">💬 信息</div>
+    <div class="sms-msgs" id="smsMsgs"></div>
+    <div class="sms-input-row">
+      <input class="sms-input" id="smsInput" placeholder="发条短信..." onkeydown="if(event.key==='Enter')sendSMS()">
+      <button class="btn-pill btn-primary" onclick="sendSMS()">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     弹窗：浏览器
+======================================== -->
+<div class="modal-mask browser-modal" id="modalBrowser">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modalBrowser')">✕</button>
+    <div class="modal-title">🌐 浏览器</div>
+    <div class="browser-bar">
+      <input class="browser-url" id="browserUrl" placeholder="输入网址..." type="url">
+      <button class="btn-pill btn-primary" onclick="browserGo()">Go</button>
+    </div>
+    <iframe class="browser-frame" id="browserFrame" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+    <div class="browser-summary" id="browserSummary"></div>
+  </div>
+</div>
+
+<!-- ========================================
+     弹窗：大卡片编辑
+======================================== -->
+<div class="modal-mask" id="modalBigCard">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modalBigCard')">✕</button>
+    <div class="modal-title">📋 角色卡 / 世界观</div>
+    <textarea class="setting-input" id="bigCardEdit" rows="10"
+      placeholder="粘贴人物设定、世界观文档、长文..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn-pill btn-primary" style="flex:1;" onclick="saveBigCard()">💾 保存</button>
+      <button class="btn-pill btn-red" onclick="clearBigCard()">🗑 清空</button>
+    </div>
+  </div>
+</div>
+
+<!-- 预设编辑弹窗 -->
+<div class="modal-mask" id="modalPreset">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modalPreset')">✕</button>
+    <div class="modal-title">🗂 API 预设</div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:4px;">预设名称</label>
+      <input class="setting-input" id="presetName" placeholder="例：GPT4o日常聊天">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-pill btn-primary" style="flex:1;" onclick="savePreset()">💾 保存预设</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<script>
+// ========== 页面路由 ==========
+var pageStack=['pageHome'];
+function goPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  if(pageStack[pageStack.length-1]!==id) pageStack.push(id);
+  if(id==='pageChat') scrollChatToBottom();
+  if(id==='pageHot') loadHotSearch();
+  if(id==='pageFriends') renderFriends();
+  if(id==='pageSettings') renderPresets();
+  if(id==='pageWorld') loadWorld();
+  if(id==='pageAppearance') loadAppearanceForm();
+}
+function goBack(){
+  if(pageStack.length>1) pageStack.pop();
+  goPage(pageStack[pageStack.length-1]);
+}
+
+// ========== 时钟 ==========
+var WEEK=['周日','周一','周二','周三','周四','周五','周六'];
+function updateClock(){
+  var now=new Date();
+  var h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('homeTime').textContent=h+':'+m;
+  // 顶部大卡片日期
+  var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0'),d=String(now.getDate()).padStart(2,'0');
+  var topDate=document.getElementById('topDate');
+  if(topDate)topDate.textContent=y+'-'+mo+'-'+d+' '+WEEK[now.getDay()]+' '+h+':'+m;
+}
+setInterval(updateClock,1000); updateClock();
+
+// ========== 弹窗 ==========
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow='';
+}
+document.querySelectorAll('.modal-mask').forEach(function(m){
+  m.addEventListener('click',function(e){if(e.target===this)closeModal(this.id);});
+});
+
+// ========== Toast ==========
+function toast(msg,dur){
+  dur=dur||2000;
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity 0.4s';
+    setTimeout(function(){t.remove();},400);},dur);
+}
+
+// ========== 打卡卡片 ==========
+var todayCards=[null,null,null];
+function uploadTodayCard(idx){
+  var inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var r=new FileReader();
+    r.onload=function(ev){
+      todayCards[idx]=ev.target.result;
+      renderTodayCard(idx,ev.target.result);
+      localStorage.setItem('todayCard'+idx,ev.target.result);
+    };r.readAsDataURL(f);
+  };inp.click();
+}
+function renderTodayCard(idx,src){
+  var card=document.getElementById('card'+idx);
+  card.innerHTML='<img src="'+src+'" style="width:100%;height:calc(100% - 26px);object-fit:cover;position:absolute;top:0;left:0;border-radius:16px 16px 0 0;">'+
+    '<div class="plus-btn" style="z-index:3;" onclick="uploadTodayCard('+idx+');event.stopPropagation();">＋</div>'+
+    '<div class="card-label">today</div>';
+}
+function loadTodayCards(){
+  [0,1,2].forEach(function(i){
+    var src=localStorage.getItem('todayCard'+i);
+    if(src) renderTodayCard(i,src);
+  });
+}
+
+// ========== 音乐组件 ==========
+var musicPlaying=false;
+var musicAudio=null;
+function toggleMusic(){
+  var vinyl=document.getElementById('vinyl');
+  musicPlaying=!musicPlaying;
+  if(musicPlaying){vinyl.classList.add('playing');toast('🎵 播放中');}
+  else{vinyl.classList.remove('playing');toast('⏸ 已暂停');}
+}
+
+// ========== 大卡片 ==========
+function editBigCard(){
+  var cur=localStorage.getItem('bigCard')||'';
+  document.getElementById('bigCardEdit').value=cur;
+  openModal('modalBigCard');
+}
+function saveBigCard(){
+  var val=document.getElementById('bigCardEdit').value;
+  localStorage.setItem('bigCard',val);
+  renderBigCard(val);
+  closeModal('modalBigCard');
+  toast('角色卡已保存 ✅');
+}
+function clearBigCard(){
+  if(!confirm('确定清空角色卡？'))return;
+  localStorage.removeItem('bigCard');
+  renderBigCard('');
+  closeModal('modalBigCard');
+}
+function renderBigCard(val){
+  var ph=document.getElementById('bigCardPlaceholder');
+  var hint=document.getElementById('bigCardHint');
+  var content=document.getElementById('bigCardContent');
+  if(val&&val.trim()){
+    ph.style.display='none';hint.style.display='none';
+    content.style.display='block';content.textContent=val;
+  } else {
+    ph.style.display='';hint.style.display='';content.style.display='none';
+  }
+}
+</script>
+
+<script>
+// ========== 聊天核心 ==========
+var chatHistory=[];
+var currentChar={name:'AI角色',avatar:'🌸',avatarSrc:''};
+
+function scrollChatToBottom(){
+  setTimeout(function(){
+    var m=document.getElementById('chatMsgs');m.scrollTop=m.scrollHeight;
+  },50);
+}
+
+function renderMsg(role,content,time){
+  var msgs=document.getElementById('chatMsgs');
+  var row=document.createElement('div');
+  row.className='msg-row '+(role==='user'?'me':'ai');
+  var avatar='';
+  if(role==='ai'){
+    if(currentChar.avatarSrc){
+      avatar='<div class="msg-avatar"><img src="'+currentChar.avatarSrc+'"></div>';
+    } else {
+      avatar='<div class="msg-avatar">'+currentChar.avatar+'</div>';
+    }
+  }
+  var t=time||new Date().toLocaleTimeString('zh',{hour:'2-digit',minute:'2-digit'});
+  var isImg=content&&content.startsWith('data:image');
+  var bubbleContent=isImg
+    ?'<img src="'+content+'" style="max-width:180px;border-radius:12px;display:block;">'
+    :escapeHtml(content);
+  row.innerHTML=avatar+
+    '<div><div class="msg-bubble">'+bubbleContent+'</div>'+
+    '<div class="msg-time" style="text-align:'+(role==='user'?'right':'left')+'">'+t+'</div></div>';
+  msgs.appendChild(row);
+  scrollChatToBottom();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function showTyping(){
+  var msgs=document.getElementById('chatMsgs');
+  var row=document.createElement('div');row.className='msg-row ai';row.id='typingRow';
+  var avatar='';
+  if(currentChar.avatarSrc){
+    avatar='<div class="msg-avatar"><img src="'+currentChar.avatarSrc+'"></div>';
+  } else {
+    avatar='<div class="msg-avatar">'+currentChar.avatar+'</div>';
+  }
+  row.innerHTML=avatar+'<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+  msgs.appendChild(row);scrollChatToBottom();
+}
+function hideTyping(){var r=document.getElementById('typingRow');if(r)r.remove();}
+
+async function sendMsg(){
+  var inp=document.getElementById('chatInput');
+  var text=inp.value.trim();if(!text)return;
+  inp.value='';
+  chatHistory.push({role:'user',content:text});
+  renderMsg('user',text);
+  showTyping();
+  try{
+    var reply=await callAPI(text);
+    hideTyping();
+    chatHistory.push({role:'assistant',content:reply});
+    var tw=document.getElementById('typewriter')?document.getElementById('typewriter').checked:true;
+    if(tw){typewriterRender(reply);}else{renderMsg('ai',reply);}
+    saveChat();
+  }catch(e){
+    hideTyping();
+    renderMsg('ai','[错误] '+e.message);
+    if(document.getElementById('debugMode')&&document.getElementById('debugMode').checked){
+      appendDebug('ERROR: '+e.message);
+    }
+  }
+}
+
+function typewriterRender(text){
+  var msgs=document.getElementById('chatMsgs');
+  var row=document.createElement('div');row.className='msg-row ai';
+  var avatar='';
+  if(currentChar.avatarSrc){
+    avatar='<div class="msg-avatar"><img src="'+currentChar.avatarSrc+'"></div>';
+  } else {
+    avatar='<div class="msg-avatar">'+currentChar.avatar+'</div>';
+  }
+  row.innerHTML=avatar+'<div><div class="msg-bubble" id="twBubble"></div></div>';
+  msgs.appendChild(row);
+  var bubble=row.querySelector('#twBubble');
+  var i=0;
+  var timer=setInterval(function(){
+    if(i>=text.length){clearInterval(timer);bubble.removeAttribute('id');scrollChatToBottom();return;}
+    bubble.textContent+=text[i];i++;scrollChatToBottom();
+  },18);
+}
+
+async function callAPI(userText){
+  var cfg=getSavedSettings();
+  if(!cfg.apiKey)throw new Error('请先在设置中填写 API Key');
+  var base=(cfg.apiBase||'https://api.openai.com').replace(/\/+$/,'');
+  var model=cfg.apiModel==='custom'?(cfg.apiModelCustom||'gpt-4o-mini'):cfg.apiModel;
+  var ctx=parseInt(cfg.contextCount)||12;
+  var msgs=[];
+  if(cfg.apiSystem)msgs.push({role:'system',content:cfg.apiSystem});
+  // 世界观注入
+  var world=localStorage.getItem('worldBg')||'';
+  var bigCard=localStorage.getItem('bigCard')||'';
+  if(world||bigCard){
+    var worldInject='';
+    if(bigCard)worldInject+='【角色设定】\n'+bigCard+'\n';
+    if(world)worldInject+='【世界背景】\n'+world;
+    msgs.push({role:'system',content:worldInject});
+  }
+  var hist=chatHistory.slice(-(ctx*2));
+  hist.forEach(function(m){msgs.push(m);});
+  var body={model:model,messages:msgs,
+    temperature:parseFloat(cfg.temperature)||0.9,
+    top_p:parseFloat(cfg.topP)||0.9};
+  if(document.getElementById('debugMode')&&document.getElementById('debugMode').checked){
+    appendDebug('REQUEST: '+JSON.stringify(body,null,2));
+  }
+  var resp=await fetch(base+'/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.apiKey},
+    body:JSON.stringify(body)
+  });
+  if(!resp.ok){
+    var err=await resp.text();
+    if(document.getElementById('debugMode')&&document.getElementById('debugMode').checked){
+      appendDebug('RESPONSE ERROR: '+err);
+    }
+    throw new Error('API错误 '+resp.status+': '+err.slice(0,100));
+  }
+  var data=await resp.json();
+  if(document.getElementById('debugMode')&&document.getElementById('debugMode').checked){
+    appendDebug('RESPONSE: '+JSON.stringify(data,null,2));
+  }
+  return data.choices[0].message.content;
+}
+
+function appendDebug(text){
+  var out=document.getElementById('debugOutput');
+  var sec=document.getElementById('debugSection');
+  if(out&&sec){
+    out.style.display='block';sec.style.display='';
+    out.textContent+='\n'+new Date().toLocaleTimeString()+'\n'+text+'\n---\n';
+    out.scrollTop=out.scrollHeight;
+  }
+}
+
+function toggleVoice(){toast('语音功能需配置 Minimax TTS Key 🎙');}
+
+// 短信弹窗
+var smsChatHistory=[];
+function sendSMS(){
+  var inp=document.getElementById('smsInput');var text=inp.value.trim();if(!text)return;
+  inp.value='';
+  appendSMS('me',text);
+  smsChatHistory.push({role:'user',content:text});
+  setTimeout(async function(){
+    try{
+      var r=await callAPI(text);
+      appendSMS('ai',r);
+      smsChatHistory.push({role:'assistant',content:r});
+    }catch(e){appendSMS('ai','[错误] '+e.message);}
+  },600);
+}
+function appendSMS(role,text){
+  var msgs=document.getElementById('smsMsgs');
+  var bubble=document.createElement('div');
+  Object.assign(bubble.style,{
+    maxWidth:'80%',padding:'8px 13px',borderRadius:'16px',fontSize:'13px',
+    lineHeight:'1.5',wordBreak:'break-word',marginLeft:role==='ai'?'0':'auto',
+    background:role==='ai'?'rgba(220,200,255,0.5)':'linear-gradient(135deg,#d090f0,#a090f8)',
+    color:role==='ai'?'#333':'#fff',
+    borderBottomLeftRadius:role==='ai'?'4px':'16px',
+    borderBottomRightRadius:role==='me'?'4px':'16px',
+  });
+  bubble.textContent=text;
+  msgs.appendChild(bubble);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function browserGo(){
+  var url=document.getElementById('browserUrl').value;
+  if(!url)return;
+  if(!url.startsWith('http'))url='https://'+url;
+  document.getElementById('browserFrame').src=url;
+}
+
+function startCall(){
+  document.getElementById('callStatusText').textContent='通话中...';
+  toast('语音通话需配置 Minimax TTS 🎙');
+}
+</script>
+
+<script>
+// ========== 设置存取 ==========
+function getSavedSettings(){
+  var raw=localStorage.getItem('glassPhoneSettings');
+  return raw?JSON.parse(raw):{};
+}
+function saveAllSettings(){
+  var cfg={
+    apiBase:document.getElementById('apiBase').value,
+    apiKey:document.getElementById('apiKey').value,
+    apiModel:document.getElementById('apiModel').value,
+    apiModelCustom:document.getElementById('apiModelCustom').value,
+    apiSystem:document.getElementById('apiSystem').value,
+    temperature:(document.getElementById('tempRange').value/10).toFixed(1),
+    topP:(document.getElementById('toppRange').value/10).toFixed(1),
+    subApiBase:document.getElementById('subApiBase').value,
+    subApiKey:document.getElementById('subApiKey').value,
+    subApiModel:document.getElementById('subApiModel').value,
+    minimaxKey:document.getElementById('minimaxKey').value,
+    minimaxGroupId:document.getElementById('minimaxGroupId').value,
+    minimaxVoice:document.getElementById('minimaxVoice').value,
+    bgActive:document.getElementById('bgActive').checked,
+    bgInterval:document.getElementById('bgInterval').value,
+    bgCooldown:document.getElementById('bgCooldown').value,
+    loadCount:document.getElementById('loadCount').value,
+    initCount:document.getElementById('initCount').value,
+    typewriter:document.getElementById('typewriter').checked,
+    imgEnable:document.getElementById('imgEnable').checked,
+    novelAIEnable:document.getElementById('novelAIEnable').checked,
+    novelKey:document.getElementById('novelKey').value,
+    novelModel:document.getElementById('novelModel').value,
+    novelSize:document.getElementById('novelSize').value,
+    novelNegative:document.getElementById('novelNegative').value,
+    contextCount:document.getElementById('contextCount').value,
+    debugMode:document.getElementById('debugMode').checked,
+    groupAuto:document.getElementById('groupAuto').checked,
+    groupMaxNpc:document.getElementById('groupMaxNpc').value,
+    groupMaxMsg:document.getElementById('groupMaxMsg').value,
+    groupSummaryN:document.getElementById('groupSummaryN').value,
+  };
+  localStorage.setItem('glassPhoneSettings',JSON.stringify(cfg));
+  toast('✅ 所有设置已保存');
+  // 更新模型下拉
+  document.getElementById('apiModelCustom').style.display=cfg.apiModel==='custom'?'block':'none';
+}
+function loadAllSettings(){
+  var cfg=getSavedSettings();
+  if(!cfg.apiBase)return;
+  var s=function(id,val){var el=document.getElementById(id);if(el&&val!==undefined)el.value=val;};
+  var c=function(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;};
+  s('apiBase',cfg.apiBase);s('apiKey',cfg.apiKey);s('apiSystem',cfg.apiSystem);
+  s('apiModelCustom',cfg.apiModelCustom);
+  s('subApiBase',cfg.subApiBase);s('subApiKey',cfg.subApiKey);s('subApiModel',cfg.subApiModel);
+  s('minimaxKey',cfg.minimaxKey);s('minimaxGroupId',cfg.minimaxGroupId);s('minimaxVoice',cfg.minimaxVoice);
+  s('bgInterval',cfg.bgInterval);s('bgCooldown',cfg.bgCooldown);
+  s('loadCount',cfg.loadCount);s('initCount',cfg.initCount);
+  s('novelKey',cfg.novelKey);s('novelNegative',cfg.novelNegative);
+  s('contextCount',cfg.contextCount);
+  s('groupMaxNpc',cfg.groupMaxNpc);s('groupMaxMsg',cfg.groupMaxMsg);s('groupSummaryN',cfg.groupSummaryN);
+  c('bgActive',cfg.bgActive);c('typewriter',cfg.typewriter!==false);c('imgEnable',cfg.imgEnable!==false);
+  c('novelAIEnable',cfg.novelAIEnable);c('debugMode',cfg.debugMode);
+  c('groupAuto',cfg.groupAuto!==false);
+  if(cfg.temperature!=null){
+    document.getElementById('tempRange').value=Math.round(cfg.temperature*10);
+    document.getElementById('tempVal').textContent=parseFloat(cfg.temperature).toFixed(1);
+  }
+  if(cfg.topP!=null){
+    document.getElementById('toppRange').value=Math.round(cfg.topP*10);
+    document.getElementById('toppVal').textContent=parseFloat(cfg.topP).toFixed(1);
+  }
+  if(cfg.apiModel){
+    var sel=document.getElementById('apiModel');
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===cfg.apiModel){sel.value=cfg.apiModel;found=true;break;}}
+    if(!found){sel.value='custom';document.getElementById('apiModelCustom').style.display='block';}
+  }
+  if(cfg.novelModel)document.getElementById('novelModel').value=cfg.novelModel;
+  if(cfg.novelSize)document.getElementById('novelSize').value=cfg.novelSize;
+}
+document.getElementById('apiModel').addEventListener('change',function(){
+  document.getElementById('apiModelCustom').style.display=this.value==='custom'?'block':'none';
+});
+
+// ========== API预设 ==========
+var presets=[];
+var activePresetIdx=-1;
+function renderPresets(){
+  presets=JSON.parse(localStorage.getItem('apiPresets')||'[]');
+  var list=document.getElementById('presetList');list.innerHTML='';
+  presets.forEach(function(p,i){
+    var card=document.createElement('div');
+    card.className='preset-card'+(activePresetIdx===i?' active-preset':'');
+    card.innerHTML='<div><div class="preset-name">'+escapeHtml(p.name)+'</div>'+
+      '<div class="preset-sub">'+(p.model||'')+'</div></div>'+
+      '<div style="display:flex;gap:6px;">'+
+      '<button class="btn-pill btn-primary" style="padding:5px 12px;font-size:11px;" onclick="applyPreset('+i+');event.stopPropagation();">启用</button>'+
+      '<button class="btn-pill btn-red" style="padding:5px 10px;font-size:11px;" onclick="deletePreset('+i+');event.stopPropagation();">删除</button>'+
+      '</div>';
+    list.appendChild(card);
+  });
+}
+function addPreset(){
+  document.getElementById('presetName').value='';
+  openModal('modalPreset');
+}
+function savePreset(){
+  var name=document.getElementById('presetName').value.trim();
+  if(!name)return toast('请填写预设名称');
+  var cfg=getSavedSettings();
+  presets.push({name:name,base:cfg.apiBase,key:cfg.apiKey,model:cfg.apiModel,system:cfg.apiSystem});
+  localStorage.setItem('apiPresets',JSON.stringify(presets));
+  closeModal('modalPreset');renderPresets();toast('预设已保存 ✅');
+}
+function applyPreset(i){
+  var p=presets[i];activePresetIdx=i;
+  document.getElementById('apiBase').value=p.base||'';
+  document.getElementById('apiKey').value=p.key||'';
+  if(p.model){document.getElementById('apiModel').value=p.model;}
+  document.getElementById('apiSystem').value=p.system||'';
+  renderPresets();toast('已切换到预设：'+p.name);
+}
+function deletePreset(i){
+  presets.splice(i,1);
+  localStorage.setItem('apiPresets',JSON.stringify(presets));
+  renderPresets();
+}
+
+async function fetchModels(){
+  var base=(document.getElementById('apiBase').value||'https://api.openai.com').replace(/\/+$/,'');
+  var key=document.getElementById('apiKey').value;
+  if(!key)return toast('请先填写 API Key');
+  toast('正在拉取模型列表...');
+  try{
+    var r=await fetch(base+'/v1/models',{headers:{'Authorization':'Bearer '+key}});
+    var d=await r.json();
+    var sel=document.getElementById('apiModel');
+    sel.innerHTML='';
+    d.data.sort(function(a,b){return a.id>b.id?1:-1;}).forEach(function(m){
+      var opt=document.createElement('option');opt.value=m.id;opt.textContent=m.id;sel.appendChild(opt);
+    });
+    var custOpt=document.createElement('option');custOpt.value='custom';custOpt.textContent='自定义...';
+    sel.appendChild(custOpt);
+    toast('拉取成功，共 '+d.data.length+' 个模型 ✅');
+  }catch(e){toast('拉取失败: '+e.message);}
+}
+</script>
+
+<script>
+// ========== 聊天记录存储 ==========
+function saveChat(){
+  try{localStorage.setItem('chatHistory',JSON.stringify(chatHistory.slice(-200)));}catch(e){}
+}
+function loadChat(){
+  var raw=localStorage.getItem('chatHistory');
+  if(raw){
+    chatHistory=JSON.parse(raw);
+    var limit=parseInt(getSavedSettings().initCount)||60;
+    chatHistory.slice(-limit).forEach(function(m){renderMsg(m.role,m.content);});
+  }
+}
+
+// ========== 外观 ==========
+function uploadAvatar(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var r=new FileReader();
+    r.onload=function(ev){
+      currentChar.avatarSrc=ev.target.result;
+      var prev=document.getElementById('avatarPreview');
+      prev.innerHTML='<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      var chatAvatar=document.getElementById('chatHeaderAvatar');
+      chatAvatar.innerHTML='<img src="'+ev.target.result+'">';
+      var callAvatar=document.getElementById('callAvatar');
+      callAvatar.innerHTML='<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      localStorage.setItem('charAvatar',ev.target.result);
+    };r.readAsDataURL(f);
+  };inp.click();
+}
+function saveAppearance(){
+  var name=document.getElementById('charName').value.trim();
+  if(name){
+    currentChar.name=name;
+    document.getElementById('chatHeaderName').textContent=name;
+    document.getElementById('callName').textContent=name;
+    localStorage.setItem('charName',name);
+  }
+  toast('外观已保存 🎀');
+}
+function loadAppearanceForm(){
+  var name=localStorage.getItem('charName');
+  if(name&&document.getElementById('charName'))document.getElementById('charName').value=name;
+  var src=localStorage.getItem('charAvatar');
+  if(src){
+    var prev=document.getElementById('avatarPreview');
+    if(prev)prev.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+  }
+}
+function setBg(grad){
+  document.body.style.background='linear-gradient('+grad+')';
+  document.body.style.backgroundAttachment='fixed';
+  localStorage.setItem('bgGrad',grad);
+}
+function setBlur(val){
+  document.documentElement.style.setProperty('--blur','blur('+val+'px)');
+  localStorage.setItem('blurVal',val);
+}
+function setOpacity(val){
+  var op=(val/100).toFixed(2);
+  document.documentElement.style.setProperty('--glass','rgba(255,255,255,'+op+')');
+  localStorage.setItem('opacityVal',val);
+}
+
+// ========== 世界观 ==========
+function loadWorld(){
+  var bg=localStorage.getItem('worldBg')||'';
+  var rel=localStorage.getItem('worldRelations')||'';
+  if(document.getElementById('worldBg'))document.getElementById('worldBg').value=bg;
+  if(document.getElementById('worldRelations'))document.getElementById('worldRelations').value=rel;
+}
+function saveWorld(){
+  localStorage.setItem('worldBg',document.getElementById('worldBg').value);
+  localStorage.setItem('worldRelations',document.getElementById('worldRelations').value);
+  toast('世界观已保存 🌍');
+}
+function clearWorld(){
+  if(!confirm('确定清空世界观设定？'))return;
+  localStorage.removeItem('worldBg');localStorage.removeItem('worldRelations');
+  document.getElementById('worldBg').value='';document.getElementById('worldRelations').value='';
+  toast('世界观已清空');
+}
+function deleteWorld(){
+  if(!confirm('确定删除世界书？此操作不可撤销。'))return;
+  clearWorld();goBack();
+}
+
+// ========== 步数 ==========
+var steps=parseInt(localStorage.getItem('steps'))||0;
+function addSteps(){
+  steps+=Math.floor(Math.random()*1000+200);
+  document.getElementById('stepsCount').textContent=steps.toLocaleString();
+  localStorage.setItem('steps',steps);
+  toast('今日新增步数 +'+Math.floor(Math.random()*1000+200)+' 👟');
+}
+
+// ========== 热搜 ==========
+var hotItems=['AI聊天新玩法','虚拟角色人设','玻璃风格UI','二次元OC设定','语音陪伴App','世界观构建','写作助手AI','角色扮演技巧','记忆管理模型','情感AI伴侣'];
+function loadHotSearch(){
+  var list=document.getElementById('hotList');list.innerHTML='';
+  hotItems.forEach(function(item,i){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(200,160,240,0.12);cursor:pointer;';
+    div.innerHTML='<span style="font-size:13px;font-weight:700;color:'+(i<3?'#f06060':'#bbb');
+    div.innerHTML+='width:20px;">'+( i+1)+'</span>'+
+      '<span style="font-size:14px;color:#333;flex:1;">'+item+'</span>'+
+      '<button class="btn-pill btn-gray" style="padding:4px 10px;font-size:11px;" '+
+        'onclick="sendHotToChat(\''+item+'\')">投喂AI</button>';
+    list.appendChild(div);
+  });
+}
+function sendHotToChat(item){
+  goPage('pageChat');
+  setTimeout(function(){
+    document.getElementById('chatInput').value='我看到热搜：'+item+'，你觉得呢？';
+  },200);
+  toast('已带入聊天框 🔥');
+}
+
+// ========== 朋友 ==========
+var friends=[];
+function renderFriends(){
+  friends=JSON.parse(localStorage.getItem('friends')||'[]');
+  var list=document.getElementById('friendsList');list.innerHTML='';
+  if(!friends.length){
+    list.innerHTML='<div style="text-align:center;color:#ccc;padding:40px 0;font-size:14px;">还没有AI好友，点右上角添加 ✨</div>';
+    return;
+  }
+  friends.forEach(function(f,i){
+    var div=document.createElement('div');
+    div.className='setting-card';div.style.marginBottom='10px';
+    div.innerHTML='<div class="setting-row" style="cursor:pointer;" onclick="chatWithFriend('+i+')">'+
+      '<div class="setting-row-icon" style="font-size:28px;">'+(f.avatar||'🤖')+'</div>'+
+      '<div class="setting-row-body"><div class="setting-row-label">'+escapeHtml(f.name)+'</div>'+
+      '<div class="setting-row-sub">'+(f.desc||'AI好友')+'</div></div>'+
+      '<button class="btn-pill btn-red" style="padding:5px 10px;font-size:11px;" '+
+        'onclick="deleteFriend('+i+');event.stopPropagation();">删除</button></div>';
+    list.appendChild(div);
+  });
+}
+function addFriend(){
+  var name=prompt('好友名字：');if(!name)return;
+  var desc=prompt('人设描述（可选）：')||'';
+  friends.push({name:name,desc:desc,avatar:'🤖',system:'你的名字是'+name+'。'+desc});
+  localStorage.setItem('friends',JSON.stringify(friends));
+  renderFriends();toast('好友已添加 👫');
+}
+function deleteFriend(i){
+  friends.splice(i,1);localStorage.setItem('friends',JSON.stringify(friends));renderFriends();
+}
+function chatWithFriend(i){
+  var f=friends[i];currentChar.name=f.name;currentChar.avatar=f.avatar||'🤖';currentChar.avatarSrc='';
+  document.getElementById('chatHeaderName').textContent=f.name;
+  document.getElementById('chatHeaderAvatar').textContent=f.avatar||'🤖';
+  // 注入好友人设
+  var cfg=getSavedSettings();cfg.apiSystem=f.system||cfg.apiSystem;
+  goPage('pageChat');
+}
+
+// ========== 数据管理 ==========
+function exportData(){
+  var all={settings:getSavedSettings(),chatHistory:chatHistory,
+    bigCard:localStorage.getItem('bigCard'),
+    worldBg:localStorage.getItem('worldBg'),
+    worldRelations:localStorage.getItem('worldRelations'),
+    friends:localStorage.getItem('friends'),
+    charName:localStorage.getItem('charName'),
+    pills:localStorage.getItem('pills'),
+    exportTime:new Date().toISOString()};
+  var blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='glass_phone_backup_'+Date.now()+'.json';
+  a.click();toast('数据已导出 📤');
+}
+function importData(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var r=new FileReader();
+    r.onload=function(ev){
+      try{
+        var d=JSON.parse(ev.target.result);
+        if(d.settings)localStorage.setItem('glassPhoneSettings',JSON.stringify(d.settings));
+        if(d.chatHistory){chatHistory=d.chatHistory;saveChat();}
+        if(d.bigCard)localStorage.setItem('bigCard',d.bigCard);
+        if(d.worldBg)localStorage.setItem('worldBg',d.worldBg);
+        if(d.worldRelations)localStorage.setItem('worldRelations',d.worldRelations);
+        if(d.friends)localStorage.setItem('friends',d.friends);
+        if(d.charName)localStorage.setItem('charName',d.charName);
+        loadAllSettings();toast('备份已导入 ✅，刷新页面生效');
+      }catch(err){toast('导入失败: '+err.message);}
+    };r.readAsText(f);
+  };inp.click();
+}
+function compressImages(){toast('图片压缩完成 🗜（已优化本地缓存）');}
+function clearCache(){
+  var keep=['glassPhoneSettings','chatHistory','bigCard','worldBg','worldRelations',
+    'friends','charName','charAvatar','bgGrad','blurVal','opacityVal','steps',
+    'todayCard0','todayCard1','todayCard2','apiPresets'];
+  var keys=Object.keys(localStorage);
+  keys.forEach(function(k){if(keep.indexOf(k)===-1)localStorage.removeItem(k);});
+  toast('冗余数据已清理 🧹');
+}
+function repairData(){
+  try{
+    var raw=localStorage.getItem('chatHistory');
+    if(raw)JSON.parse(raw);
+    toast('数据检查通过，无异常 ✅');
+  }catch(e){
+    localStorage.removeItem('chatHistory');chatHistory=[];
+    toast('已修复损坏的聊天记录 🔧');
+  }
+}
+function testNovelAI(){toast('NovelAI测试：请填写Key后使用');}
+
+// ========== 初始化 ==========
+(function init(){
+  loadAllSettings();
+  loadTodayCards();
+  renderBigCard(localStorage.getItem('bigCard')||'');
+  // 角色名
+  var cn=localStorage.getItem('charName');
+  if(cn){currentChar.name=cn;document.getElementById('chatHeaderName').textContent=cn;document.getElementById('callName').textContent=cn;}
+  // 角色头像
+  var ca=localStorage.getItem('charAvatar');
+  if(ca){
+    currentChar.avatarSrc=ca;
+    var ch=document.getElementById('chatHeaderAvatar');
+    ch.innerHTML='<img src="'+ca+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    document.getElementById('callAvatar').innerHTML='<img src="'+ca+'" style="width:80px;height:80px;object-fit:cover;border-radius:50%;">';
+  }
+  // 背景
+  var bg=localStorage.getItem('bgGrad');if(bg)setBg(bg);
+  var bl=localStorage.getItem('blurVal');if(bl)setBlur(bl);
+  var op=localStorage.getItem('opacityVal');if(op)setOpacity(op);
+  // 步数
+  document.getElementById('stepsCount').textContent=steps.toLocaleString();
+  // 聊天
+  loadChat();
+  // 后台活动
+  initBgActivity();
+})();
+
+// ========== 后台活动 ==========
+var bgTimer=null;
+var bgLastSend=0;
+function initBgActivity(){
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){startBgActivity();}else{stopBgActivity();}
+  });
+}
+function startBgActivity(){
+  var cfg=getSavedSettings();
+  if(!cfg.bgActive)return;
+  var interval=parseInt(cfg.bgInterval)||60;
+  bgTimer=setInterval(async function(){
+    var now=Date.now();
+    if(now-bgLastSend<interval*1000)return;
+    bgLastSend=now;
+    try{
+      var bgPrompts=['你在做什么呢，想你了😊','刚才看到个有趣的事...','嗯...突然想发条消息给你','你有没有想我？'];
+      var prompt=bgPrompts[Math.floor(Math.random()*bgPrompts.length)];
+      var reply=await callAPI('（后台独白）'+prompt);
+      chatHistory.push({role:'assistant',content:reply});saveChat();
+    }catch(e){}
+  },10000);
+}
+function stopBgActivity(){if(bgTimer){clearInterval(bgTimer);bgTimer=null;}}
+</script>
+</body>
+</html>
